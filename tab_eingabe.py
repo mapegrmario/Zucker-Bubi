@@ -133,6 +133,7 @@ class TabEingabe(ctk.CTkScrollableFrame):
 
     def _save(self):
         from utils import parse_date
+        from database import messung_exists
         raw   = self._val_var.get().strip()
         mmol  = parse_input(raw, self._unit())
         if not mmol:
@@ -143,9 +144,20 @@ class TabEingabe(ctk.CTkScrollableFrame):
         if not datum:
             self._status_lbl.configure(text="Ungültiges Datum", text_color=COLORS["danger"])
             return
-        m = Messung(None, datum, self._time_var.get(), mmol,
+        uhrzeit = self._time_var.get()[:5]
+        uid = self._s.get("active_user_id", 1)
+        # Duplikat-Warnung (kein Hard-Block – zweiter Klick speichert trotzdem)
+        if messung_exists(datum, uhrzeit, uid) and not getattr(self, "_dup_ok", False):
+            self._status_lbl.configure(
+                text="⚠  Bereits ein Eintrag für diesen Zeitpunkt vorhanden. "
+                     "Nochmals klicken zum Speichern.",
+                text_color=COLORS["warning"])
+            self._dup_ok = True
+            return
+        self._dup_ok = False
+        m = Messung(None, datum, uhrzeit, mmol,
                     self._typ_var.get(), self._note_var.get().strip())
-        add_messung(m, user_id=self._s.get("active_user_id",1))
+        add_messung(m, user_id=uid)
         self._status_lbl.configure(text=L.t("saved"), text_color=COLORS["normal"])
         col = status_color(mmol)
         self._preview_lbl.configure(
@@ -160,6 +172,7 @@ class TabEingabe(ctk.CTkScrollableFrame):
         self._val_var.set(""); self._note_var.set("")
         self._status_lbl.configure(text="")
         self._preview_lbl.configure(text="")
+        self._dup_ok = False
 
     def on_show(self):
         self._unit_lbl.configure(text=self._unit())

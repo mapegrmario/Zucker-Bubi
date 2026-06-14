@@ -1,6 +1,7 @@
 # tab_dashboard.py – Dashboard Tab
 import customtkinter as ctk
 import tkinter as tk
+import matplotlib.pyplot as plt
 from config import COLORS, TYPE_COLORS
 import lang as L
 from database import get_last_messung, get_today, get_messungen, calc_statistik
@@ -44,14 +45,18 @@ class TabDashboard(ctk.CTkScrollableFrame):
         self.refresh()
 
     def refresh(self):
+        from database import get_user
         unit   = self._s.get("unit", "mmol/L")
-        low    = self._s.get("target_low",  3.9)
-        high   = self._s.get("target_high", 7.8)
-        last_m = get_last_messung(user_id=self._s.get("active_user_id",1))
-        today  = get_today(user_id=self._s.get("active_user_id",1))
-        ms7    = get_messungen(7, user_id=self._s.get("active_user_id",1))
-        stat7  = calc_statistik(7, low, high, user_id=self._s.get("active_user_id",1))
-        stat30 = calc_statistik(30, low, high, user_id=self._s.get("active_user_id",1))
+        uid    = self._s.get("active_user_id", 1)
+        # Persönliche Zielwerte aus Benutzerprofil (nicht aus globalen Einstellungen)
+        _u = get_user(uid)
+        low  = _u.target_low  if _u else self._s.get("target_low",  3.9)
+        high = _u.target_high if _u else self._s.get("target_high", 7.8)
+        last_m = get_last_messung(user_id=uid)
+        today  = get_today(user_id=uid)
+        ms7    = get_messungen(7, user_id=uid)
+        stat7  = calc_statistik(7,  low, high, user_id=uid)
+        stat30 = calc_statistik(30, low, high, user_id=uid)
 
         # Tagesdurchschnitt
         from models import Statistik
@@ -71,7 +76,9 @@ class TabDashboard(ctk.CTkScrollableFrame):
         self._rebuild_today(today, unit, low, high)
 
     def _rebuild_chart(self, ms, unit, low, high):
-        # Alten Chart entfernen
+        # Alte Matplotlib-Figure schließen (Memory Leak verhindern)
+        if self._chart_widget and hasattr(self._chart_widget, "_mpl_fig"):
+            plt.close(self._chart_widget._mpl_fig)
         for w in self._chart_host.winfo_children():
             w.destroy()
         self._chart_widget = build_week_chart(self._chart_host, ms, unit, low, high)

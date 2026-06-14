@@ -30,13 +30,11 @@ class RoundCard(ctk.CTkFrame):
                      text_color=COLORS["text_muted"]
                      ).grid(row=1, column=0, padx=10)
 
-        if sub:
-            ctk.CTkLabel(self, text=sub,
-                         font=ctk.CTkFont(size=9),
-                         text_color=COLORS["text_muted"]
-                         ).grid(row=2, column=0, padx=10, pady=(0, 12))
-        else:
-            ctk.CTkFrame(self, height=12, fg_color="transparent").grid(row=2, column=0)
+        # Direkte Referenz speichern – kein fragiles Suchen per Fontgröße
+        self._sub_lbl = ctk.CTkLabel(self, text=sub,
+                                      font=ctk.CTkFont(size=9),
+                                      text_color=COLORS["text_muted"])
+        self._sub_lbl.grid(row=2, column=0, padx=10, pady=(0, 12))
 
     def _draw_circle(self, value: str, unit: str):
         c = self._canvas
@@ -61,12 +59,7 @@ class RoundCard(ctk.CTkFrame):
         if circle_color:
             self._circ_color = circle_color
         self._draw_circle(value, unit)
-        # Sub-Label aktualisieren (einfach über grid-Kinder suchen)
-        for w in self.winfo_children():
-            if isinstance(w, ctk.CTkLabel):
-                if w.cget("font").cget("size") == 9:
-                    w.configure(text=sub)
-                    break
+        self._sub_lbl.configure(text=sub)   # direkte Referenz
 
 
 class CardRow(ctk.CTkFrame):

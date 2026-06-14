@@ -38,6 +38,7 @@ def build_week_chart(parent, messungen: List[Messung], unit: str,
                 ha="center", va="center", color=COLORS["text_muted"], fontsize=11)
         canvas = FigureCanvasTkAgg(fig, master=parent)
         canvas.draw()
+        canvas._mpl_fig = fig
         return canvas
 
     today  = date.today()
@@ -76,6 +77,7 @@ def build_week_chart(parent, messungen: List[Messung], unit: str,
 
     canvas = FigureCanvasTkAgg(fig, master=parent)
     canvas.draw()
+    canvas._mpl_fig = fig   # für sauberes plt.close() durch den Caller
     return canvas
 
 

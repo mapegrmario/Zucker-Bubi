@@ -44,6 +44,9 @@ def init_db():
         cols = [r[1] for r in c.execute("PRAGMA table_info(messungen)")]
         if "user_id" not in cols:
             c.execute("ALTER TABLE messungen ADD COLUMN user_id INTEGER DEFAULT 1")
+        # Performance-Index (wichtig ab ~500 Einträgen)
+        c.execute("""CREATE INDEX IF NOT EXISTS idx_m_datum_uid
+                     ON messungen(datum, user_id)""")
         # Standard-Benutzer anlegen falls keine vorhanden
         if c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
             c.execute("INSERT INTO users (name) VALUES ('Standardbenutzer')")
